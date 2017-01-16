@@ -1,0 +1,270 @@
+//#include "btree.h"
+// your btree iterator implementation goes here
+template<typename TREE> typename btree_iterator<TREE>::reference
+btree_iterator<TREE>::operator *() const {
+    return pointee_->__elem_[_index];
+}
+
+template<typename TREE> btree_iterator<TREE>&
+btree_iterator<TREE>::operator ++() {
+    if (pointee_ == nullptr) {
+        pointee_ = btree_->head_;
+        _index = 0;
+    } else if (pointee_->__descendants_[_index + 1] != nullptr) {
+        // the pointed element have descendants after,
+        // got down the tree to the left-most descendant node
+        pointee_ = pointee_->__descendants_[_index + 1];
+        _index = 0;
+        _down_ascend();
+    } else if (_index < pointee_->__occupied_size_ - 1) {
+        // point to the next element in current node;
+        ++_index;
+    } else {
+        // reaches the end of current node, will go up
+        // to parent node.
+        _up_ascend (operator *());
+    }
+    return *this;
+}
+
+template<typename TREE> btree_iterator<TREE>&
+btree_iterator<TREE>::operator --(){
+    if (pointee_ == nullptr) {
+        pointee_ = btree_->tail_;
+        _index = pointee_->__occupied_size_ - 1;
+    } else if (pointee_->__descendants_[_index] != nullptr) {
+        pointee_ = pointee_->__descendants_[_index];
+        _down_descend();
+    } else if (_index > 0) {
+        --_index;
+    } else {
+        _up_descend (operator *());
+    }
+    return *this;
+}
+
+template<typename TREE> btree_iterator<TREE>
+btree_iterator<TREE>::operator ++(int){
+    btree_iterator ret_ = *this;
+    operator ++();
+    return ret_;
+}
+
+template<typename TREE> btree_iterator<TREE>
+btree_iterator<TREE>::operator --(int){
+    btree_iterator ret_ = *this;
+    operator --();
+    return ret_;
+}
+
+template<typename TREE> btree_iterator<TREE>&
+btree_iterator<TREE>::operator =(const btree_iterator& temp_btree) {
+    if (this == &temp_btree) {
+        return *this;
+    } else {
+        pointee_ = temp_btree.pointee_;
+        _index = temp_btree._index;
+        btree_ = temp_btree.btree_;
+        return *this;
+    }
+}
+
+template<typename TREE> bool
+btree_iterator<TREE>::operator ==(const btree_iterator<TREE>& temp_btree) const {
+    return (btree_ == temp_btree.btree_ && pointee_ == temp_btree.pointee_ && _index == temp_btree._index);
+}
+
+template<typename TREE> bool
+btree_iterator<TREE>::operator ==(const const_btree_iterator<TREE>& temp_btree) const {
+    return (btree_ == temp_btree.btree_ && pointee_ == temp_btree.pointee_ && _index == temp_btree._index);
+}
+
+template<typename TREE> void
+btree_iterator<TREE>::_up_ascend(const TREE& temp_elem){
+    if (pointee_->__parent_ == nullptr) {
+        // already the at root node
+        pointee_ = nullptr;
+        _index = 0;
+        return;
+    } else {
+        pointee_ = pointee_->__parent_;
+        for (_index = 0; _index < pointee_->__occupied_size_; ++_index) {
+            if (pointee_->__elem_[_index] > temp_elem)
+                return;
+        }
+        _up_ascend(temp_elem);
+    }
+}
+
+template<typename TREE> void
+btree_iterator<TREE>::_down_ascend(){
+    if (pointee_->__descendants_[0] == nullptr)
+        return;
+    pointee_ = pointee_->__descendants_[0];
+    _down_ascend();
+}
+
+template<typename TREE> void
+btree_iterator<TREE>::_up_descend(const TREE& temp_elem){
+    if (pointee_->__parent_ == nullptr) {
+        pointee_ = nullptr;
+        _index = 0;
+        return;
+    } else {
+        pointee_ = pointee_->__parent_;
+        for (_index = pointee_->__occupied_size_ - 1; _index >= 0; --_index) {
+            if (pointee_->__elem_[_index] < temp_elem)
+                return;
+            if (_index == 0)
+                break;
+        }
+        _up_descend(temp_elem);
+    }
+}
+
+template<typename TREE> void
+btree_iterator<TREE>::_down_descend() {
+    _index = pointee_->__occupied_size_ - 1;
+    if (pointee_->__descendants_[_index + 1] == nullptr)
+        return;
+    pointee_ = pointee_->__descendants_[_index + 1];
+    _down_descend();
+}
+
+template<typename TREE> typename const_btree_iterator<TREE>::reference
+const_btree_iterator<TREE>::operator *() const {
+    return pointee_->__elem_[_index];
+}
+
+template<typename TREE> const_btree_iterator<TREE>&
+const_btree_iterator<TREE>::operator ++() {
+    if (pointee_ == nullptr) {
+        pointee_ = btree_->head_;
+        _index = 0;
+        return *this;
+    }
+
+    if (pointee_->__descendants_[_index + 1] != nullptr) {
+        pointee_ = pointee_->__descendants_[_index + 1];
+        _index = 0;
+        _down_ascend();
+        return *this;
+    }
+
+    if (_index < pointee_->__occupied_size_ - 1) {
+        ++_index;
+        return *this;
+    }
+
+    _up_ascend(operator *());
+    return *this;
+}
+
+template<typename TREE> const_btree_iterator<TREE>&
+const_btree_iterator<TREE>::operator --() {
+    if (pointee_ == nullptr) {
+        pointee_ = btree_->tail_;
+        _index = pointee_->__occupied_size_ - 1;
+        return *this;
+    }
+
+    if (pointee_->__descendants_[_index] != nullptr) {
+        pointee_ = pointee_->__descendants_[_index];
+        _down_descend();
+        return *this;
+    }
+
+    if (_index > 0) {
+        --_index;
+        return *this;
+    }
+
+    _up_descend(operator *());
+    return *this;
+}
+
+template<typename TREE> const_btree_iterator<TREE>
+const_btree_iterator<TREE>::operator ++(int) {
+    const_btree_iterator ret = *this;
+    operator ++();
+    return ret;
+}
+
+template<typename TREE> const_btree_iterator<TREE>
+const_btree_iterator<TREE>::operator --(int) {
+    const_btree_iterator ret = *this;
+    operator --();
+    return ret;
+}
+
+template<typename TREE> const_btree_iterator<TREE>&
+const_btree_iterator<TREE>::operator =(const const_btree_iterator& temp_btree) {
+    if (this == &temp_btree) {
+        return *this;
+    } else {
+        pointee_ = temp_btree.pointee_;
+        _index = temp_btree._index;
+        btree_ = temp_btree.btree_;
+        return *this;
+    }
+}
+
+template<typename TREE> bool
+const_btree_iterator<TREE>::operator ==(
+        const const_btree_iterator& temp_btree) const {
+    return (btree_ == temp_btree.btree_ && pointee_ == temp_btree.pointee_ && _index == temp_btree._index);
+}
+
+template<typename TREE> bool
+const_btree_iterator<TREE>::operator ==(
+        const btree_iterator<TREE>& temp_btree) const {
+    return (btree_ == temp_btree.btree_ && pointee_ == temp_btree.pointee_ && _index == temp_btree._index);
+}
+
+template<typename TREE> void
+const_btree_iterator<TREE>::_up_ascend(const TREE& temp_elem) {
+    if (pointee_->__parent_ == nullptr) {
+        // already the at root node
+        pointee_ = nullptr;
+        _index = 0;
+        return;
+    } else {
+        pointee_ = pointee_->__parent_;
+        for (_index = 0; _index < pointee_->__occupied_size_; ++_index) {
+            if (pointee_->__elem_[_index] > temp_elem) return;
+        }
+        _up_ascend(temp_elem);
+    }
+}
+
+template<typename TREE> void
+const_btree_iterator<TREE>::_down_ascend() {
+    if (pointee_->__descendants_[0] == nullptr)
+        return;
+    pointee_ = pointee_->__descendants_[0];
+    _down_ascend();
+}
+
+template<typename TREE> void
+const_btree_iterator<TREE>::_up_descend(const TREE& temp_elem) {
+    if (pointee_->__parent_ == nullptr) {
+        pointee_ = nullptr;
+        _index = 0;
+        return;
+    } else {
+        pointee_ = pointee_->__parent_;
+        for (_index = pointee_->__occupied_size_ - 1; _index >= 0; --_index) {
+            if (pointee_->__elem_[_index] < temp_elem) return;
+            if (_index == 0) break;
+        }
+        _up_descend(temp_elem);
+    }
+}
+
+template<typename TREE> void
+const_btree_iterator<TREE>::_down_descend() {
+    _index = pointee_->__occupied_size_ - 1;
+    if (pointee_->__descendants_[_index + 1] == nullptr) return;
+    pointee_ = pointee_->__descendants_[_index + 1];
+    _down_descend();
+}
